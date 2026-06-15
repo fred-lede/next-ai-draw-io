@@ -54,6 +54,7 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { useDictionary } from "@/hooks/use-dictionary"
 import type { UseModelConfigReturn } from "@/hooks/use-model-config"
+import { getApiEndpoint } from "@/lib/base-path"
 import { formatMessage } from "@/lib/i18n/utils"
 import type { ProviderConfig, ProviderName } from "@/lib/types/model-config"
 import { PROVIDER_INFO, SUGGESTED_MODELS } from "@/lib/types/model-config"
@@ -132,6 +133,14 @@ export function ModelConfigDialog({
         modelId: string
         message: string
     } | null>(null)
+    const [dynamicSuggestedModels, setDynamicSuggestedModels] = useState<
+        Partial<Record<ProviderName, string[]>>
+    >({})
+    const [loadedSuggestedProviders, setLoadedSuggestedProviders] = useState<
+        Partial<Record<ProviderName, boolean>>
+    >({})
+    const [loadingSuggestedProvider, setLoadingSuggestedProvider] =
+        useState<ProviderName | null>(null)
 
     const {
         config,
@@ -157,10 +166,68 @@ export function ModelConfigDialog({
         }
     }, [])
 
+    useEffect(() => {
+        if (
+            !open ||
+            selectedProvider?.provider !== "aihubmix" ||
+            loadedSuggestedProviders.aihubmix
+        ) {
+            return
+        }
+
+        let cancelled = false
+        setLoadingSuggestedProvider("aihubmix")
+
+        fetch(getApiEndpoint("/api/aihubmix-models"))
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`Failed to load models: ${response.status}`)
+                }
+                return response.json()
+            })
+            .then((data: { models?: unknown }) => {
+                if (cancelled || !Array.isArray(data.models)) {
+                    return
+                }
+
+                const models = data.models.filter(
+                    (model): model is string => typeof model === "string",
+                )
+                if (models.length > 0) {
+                    setDynamicSuggestedModels((current) => ({
+                        ...current,
+                        aihubmix: models,
+                    }))
+                }
+            })
+            .catch((error) => {
+                console.warn("Failed to load AIHubMix models:", error)
+            })
+            .finally(() => {
+                if (cancelled) {
+                    return
+                }
+
+                setLoadedSuggestedProviders((current) => ({
+                    ...current,
+                    aihubmix: true,
+                }))
+                setLoadingSuggestedProvider(null)
+            })
+
+        return () => {
+            cancelled = true
+        }
+    }, [open, selectedProvider?.provider, loadedSuggestedProviders.aihubmix])
+
     // Get suggested models for current provider
     const suggestedModels = selectedProvider
-        ? SUGGESTED_MODELS[selectedProvider.provider] || []
+        ? dynamicSuggestedModels[selectedProvider.provider] ||
+          SUGGESTED_MODELS[selectedProvider.provider] ||
+          []
         : []
+    const isLoadingSuggestedModels =
+        selectedProvider?.provider === loadingSuggestedProvider
 
     // Filter out already-added models from suggestions
     const existingModelIds =
@@ -168,6 +235,11 @@ export function ModelConfigDialog({
     const availableSuggestions = suggestedModels.filter(
         (modelId) => !existingModelIds.includes(modelId),
     )
+    const emptyStateSuggestions = selectedProvider
+        ? (SUGGESTED_MODELS[selectedProvider.provider] || [])
+              .filter((modelId) => !existingModelIds.includes(modelId))
+              .slice(0, 4)
+        : []
 
     // Handle adding a new provider
     const handleAddProvider = (providerType: ProviderName) => {
@@ -773,21 +845,26 @@ export function ModelConfigDialog({
                                                         }
                                                     }}
                                                     disabled={
+                                                        isLoadingSuggestedModels ||
                                                         availableSuggestions.length ===
-                                                        0
+                                                            0
                                                     }
                                                 >
                                                     <SelectTrigger className="w-28 h-8 rounded-lg hover:bg-interactive-hover">
-                                                        <span className="text-xs">
-                                                            {availableSuggestions.length ===
-                                                            0
-                                                                ? dict
-                                                                      .modelConfig
-                                                                      .allAdded
-                                                                : dict
-                                                                      .modelConfig
-                                                                      .suggested}
-                                                        </span>
+                                                        {isLoadingSuggestedModels ? (
+                                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                        ) : (
+                                                            <span className="text-xs">
+                                                                {availableSuggestions.length ===
+                                                                0
+                                                                    ? dict
+                                                                          .modelConfig
+                                                                          .allAdded
+                                                                    : dict
+                                                                          .modelConfig
+                                                                          .suggested}
+                                                            </span>
+                                                        )}
                                                     </SelectTrigger>
                                                     <SelectContent className="max-h-72">
                                                         {availableSuggestions.map(
@@ -816,7 +893,12 @@ export function ModelConfigDialog({
                                             0 ? (
                                                 <div className="p-6 text-center h-full flex flex-col items-center justify-center">
                                                     <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-surface-2 mb-3">
-                                                        <Sparkles className="h-5 w-5 text-muted-foreground" />
+                                                        <ProviderLogo
+                                                            provider={
+                                                                selectedProvider.provider
+                                                            }
+                                                            className="size-5 text-muted-foreground"
+                                                        />
                                                     </div>
                                                     <p className="text-sm text-muted-foreground">
                                                         {
@@ -824,6 +906,36 @@ export function ModelConfigDialog({
                                                                 .noModelsConfigured
                                                         }
                                                     </p>
+                                                    {emptyStateSuggestions.length >
+                                                        0 && (
+                                                        <div className="mt-4 flex max-w-full flex-wrap items-center justify-center gap-2">
+                                                            {emptyStateSuggestions.map(
+                                                                (modelId) => (
+                                                                    <Button
+                                                                        key={
+                                                                            modelId
+                                                                        }
+                                                                        type="button"
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        className="h-7 max-w-[220px] rounded-lg px-2 font-mono text-[11px]"
+                                                                        onClick={() =>
+                                                                            handleAddModel(
+                                                                                modelId,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <Plus className="h-3 w-3 shrink-0" />
+                                                                        <span className="truncate">
+                                                                            {
+                                                                                modelId
+                                                                            }
+                                                                        </span>
+                                                                    </Button>
+                                                                ),
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ) : (
                                                 <div className="divide-y divide-border-subtle">

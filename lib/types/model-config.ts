@@ -9,6 +9,7 @@ export type ProviderName =
     | "bedrock"
     | "ollama"
     | "openrouter"
+    | "aihubmix"
     | "deepseek"
     | "siliconflow"
     | "sglang"
@@ -102,6 +103,7 @@ export const PROVIDER_LOGO_MAP: Record<string, string> = {
     azure: "azure",
     bedrock: "amazon-bedrock",
     openrouter: "openrouter",
+    aihubmix: "aihubmix",
     deepseek: "deepseek",
     siliconflow: "siliconflow",
     sglang: "openai", // SGLang is OpenAI-compatible
@@ -144,6 +146,10 @@ export const PROVIDER_INFO: Record<
     openrouter: {
         label: "OpenRouter",
         defaultBaseUrl: "https://openrouter.ai/api/v1",
+    },
+    aihubmix: {
+        label: "AIHubMix",
+        defaultBaseUrl: "https://aihubmix.com/v1",
     },
     deepseek: {
         label: "DeepSeek",
@@ -316,6 +322,41 @@ export const SUGGESTED_MODELS: Partial<Record<ProviderName, string[]>> = {
         "qwen/qwen3-coder",
         // MiniMax
         "minimax/minimax-m3",
+    ],
+    aihubmix: [
+        // Fallback list. The settings UI loads the live model list from AIHubMix when available.
+        // Anthropic Claude
+        "claude-fable-5",
+        "claude-opus-4-8",
+        "claude-sonnet-4-6",
+        // OpenAI
+        "gpt-5.5",
+        "gpt-5.5-pro",
+        "gpt-5.4",
+        // Google Gemini
+        "gemini-3.5-flash",
+        "gemini-3.1-pro-preview",
+        "gemini-3-flash-preview",
+        // DeepSeek
+        "deepseek-v4-pro",
+        "deepseek-v4-flash",
+        // Qwen
+        "qwen3.7-max",
+        "qwen3-coder-next",
+        // Z.ai
+        "glm-5.1",
+        // Moonshot AI
+        "kimi-k2.6",
+        // MiniMax
+        "minimax-m3",
+        // xAI
+        "grok-4.3",
+        // Baidu
+        "ernie-5.1",
+        // Mistral
+        "mistral-large-3",
+        // Meta
+        "llama-4-maverick",
     ],
     deepseek: [
         "deepseek-v4-pro",

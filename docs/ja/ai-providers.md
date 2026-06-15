@@ -46,6 +46,21 @@ AI_MODEL=gpt-4o
 OPENAI_BASE_URL=https://your-custom-endpoint/v1
 ```
 
+### AIHubMix
+
+AIHubMix は、単一の API キーで Claude、GPT、Gemini、DeepSeek などのモデルへのアクセスを提供します。
+
+```bash
+AIHUBMIX_API_KEY=your_api_key
+AI_MODEL=claude-sonnet-4-5-20250929
+```
+
+任意のカスタムエンドポイント:
+
+```bash
+AIHUBMIX_BASE_URL=https://aihubmix.com/v1
+```
+
 ### Anthropic
 
 ```bash
@@ -300,7 +315,7 @@ QINIU_BASE_URL=https://your-custom-endpoint
 **複数**の API キーを設定する場合は、`AI_PROVIDER` を明示的に設定する必要があります:
 
 ```bash
-AI_PROVIDER=google  # または: openai, anthropic, deepseek, siliconflow, doubao, azure, bedrock, openrouter, ollama, gateway, sglang, modelscope, minimax, glm, qwen, kimi, qiniu
+AI_PROVIDER=google  # または: openai, anthropic, aihubmix, deepseek, siliconflow, doubao, azure, bedrock, openrouter, ollama, gateway, sglang, modelscope, minimax, glm, qwen, kimi, qiniu
 ```
 
 ## サーバーサイドマルチモデル設定
